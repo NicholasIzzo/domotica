@@ -1,12 +1,15 @@
-# Domotica — Guida Pratica
+# 🏠 Domotica — Guida Pratica
 
-Guida completa alla domotica in italiano — da zero alla casa intelligente. Dispositivi, protocolli, configurazioni Home Assistant e consigli di acquisto per ogni budget.
+> Guida completa alla domotica in italiano — da zero alla casa intelligente.
+> Dispositivi, protocolli, configurazioni Home Assistant e consigli di acquisto per ogni budget.
 
-> Niente cloud obbligatorio, niente abbonamenti. La tua casa, sotto il tuo controllo.
+**Niente cloud obbligatorio, niente abbonamenti. La tua casa, sotto il tuo controllo.**
+
+🛒 **[→ Apri il Configuratore Preventivo](https://nicholasizzo.github.io/domotica/)** — calcola dispositivi e costi in base ai tuoi m² e budget
 
 ---
 
-## A chi è rivolta
+## 👤 A chi è rivolta
 
 - Chi vuole iniziare con la domotica senza sapere da dove partire
 - Chi usa già Home Assistant e vuole configurazioni pronte all'uso
@@ -15,34 +18,34 @@ Guida completa alla domotica in italiano — da zero alla casa intelligente. Dis
 
 ---
 
-## Contenuti
+## 📚 Contenuti
 
-### Capire la domotica
-- [Come funziona la domotica](docs/come-funziona.md) — protocolli, hub, dispositivi: il quadro completo
-- [Protocolli a confronto](docs/protocolli.md) — Zigbee, Z-Wave, Wi-Fi, Matter: quale scegliere
+### 🧠 Capire la domotica
+- **Come funziona la domotica** — protocolli, hub, dispositivi: il quadro completo
+- **Protocolli a confronto** — Zigbee, Z-Wave, Wi-Fi, Matter: quale scegliere
 
-### Home Assistant
-- [Guida a Home Assistant](docs/home-assistant.md) — installazione, configurazione e primi passi
-- [Tuya Local — liberarsi dal cloud](docs/tuya-local.md) — come usare i dispositivi Tuya senza internet
+### 🏡 Home Assistant
+- **Guida a Home Assistant** — installazione, configurazione e primi passi
+- **Tuya Local — liberarsi dal cloud** — come usare i dispositivi Tuya senza internet
 
-### Acquisti
-- [Consigli di acquisto per fascia di prezzo](docs/consigli-acquisto.md) — setup da 50€, 200€ e 500€+
-- [Dispositivi consigliati](docs/dispositivi.md) — luci, prese, sensori, telecamere: il meglio per prezzo
+### 🛒 Acquisti
+- **Consigli di acquisto per fascia di prezzo** — setup da 50€, 200€ e 500€+
+- **Dispositivi consigliati** — luci, prese, sensori, telecamere: il meglio per prezzo
 
-### Automazioni
-- [Scenari e automazioni](docs/automazioni.md) — esempi pratici pronti da copiare
+### ⚡ Automazioni
+- **Scenari e automazioni** — esempi pratici pronti da copiare
 
 ---
 
-## Roadmap contenuti
+## 🗺️ Roadmap contenuti
 
-- [x] Come funziona la domotica
-- [x] Protocolli a confronto
-- [x] Guida Home Assistant
-- [x] Tuya Local
-- [x] Consigli di acquisto per fascia
-- [x] Dispositivi consigliati
-- [x] Scenari e automazioni
+- [ ] Come funziona la domotica
+- [ ] Protocolli a confronto
+- [ ] Guida Home Assistant
+- [ ] Tuya Local
+- [ ] Consigli di acquisto per fascia
+- [ ] Dispositivi consigliati
+- [ ] Scenari e automazioni
 - [ ] Zigbee2MQTT — setup completo
 - [ ] ESPHome — dispositivi custom
 - [ ] Dashboard Lovelace avanzate
@@ -50,20 +53,18 @@ Guida completa alla domotica in italiano — da zero alla casa intelligente. Dis
 
 ---
 
-## Il setup dell'autore
+## 🖥️ Il setup dell'autore
 
-- NAS Ugreen DH4300 Plus — Home Assistant in Docker
+- **NAS Ugreen DH4300 Plus** — Home Assistant in Docker
 - Dispositivi Tuya in locale via LocalTuya
 - Automazioni per luci, prese smart e sensori
 
 ---
 
-## Autore
+## 👤 Autore
 
 **Nicholas Izzo** — Sistemista, studente L31 Informatica (specializzazione AI) @ Università Pegaso
 
-[nicholasiszzo.github.io](https://NicholasIzzo.github.io) · [Homelab](https://github.com/NicholasIzzo/homelab) · [AI Practical Guide](https://github.com/NicholasIzzo/ai-practical-guide)
-
----
+[nicholasizzo.github.io](https://nicholasizzo.github.io) · [Homelab](https://github.com/NicholasIzzo/homelab) · [AI Practical Guide](https://nicholasizzo.github.io/ai-practical-guide/)
 
 > *"La casa intelligente non deve dipendere da un server in Cina per accendere una luce."*
