@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Smart Home Configurator — Domotica</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0d1117; color: #e2e8f0; font-family: 'Segoe UI', system-ui, sans-serif; }
+  input[type=range] { -webkit-appearance: none; appearance: none; height: 6px; background: #252d3d; border-radius: 3px; outline: none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #38bdf8; cursor: pointer; }
+  button { font-family: inherit; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #0d1117; }
+  ::-webkit-scrollbar-thumb { background: #252d3d; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useMemo } = React;
+
+const DISPOSITIVI = [
+  { id:"light_eco", category:"Illuminazione", brand:"TP-Link Tapo", name:"Tapo L530E", budget_level:"economico", price:10, scale_rule:"1_per_15_mq", icon:"💡",
+    description:"Lampadina Wi-Fi RGB, non richiede hub. Ottima per iniziare.", consumo_w:8.5, standby_w:0.5, ore_uso_giorno:5, tradizionale_w:60 },
+  { id:"light_mid", category:"Illuminazione", brand:"Ikea / Shelly", name:"TRÅDFRI / Shelly Duo", budget_level:"bilanciato", price:18, scale_rule:"1_per_15_mq", icon:"💡",
+    description:"Ottimo compromesso tra affidabilità ed ecosistema locale.", consumo_w:7.5, standby_w:0.4, ore_uso_giorno:5, tradizionale_w:60 },
+  { id:"light_prem", category:"Illuminazione", brand:"Philips Hue", name:"Hue White & Color Ambiance", budget_level:"premium", price:55, scale_rule:"1_per_15_mq", icon:"💡",
+    description:"Il top di gamma per colori, reattività e integrazione.", consumo_w:9, standby_w:0.3, ore_uso_giorno:5, tradizionale_w:60 },
+  { id:"climate_eco", category:"Climatizzazione", brand:"Tuya / Moes", name:"Termostato Smart Wi-Fi", budget_level:"economico", price:45, scale_rule:"fixed_1", icon:"🌡️",
+    description:"Controllo base della caldaia tramite app Smart Life.", consumo_w:2, standby_w:1, ore_uso_giorno:24, tradizionale_w:3 },
+  { id:"climate_mid", category:"Climatizzazione", brand:"Tado°", name:"Termostato Intelligente V3+", budget_level:"bilanciato", price:150, scale_rule:"fixed_1", icon:"🌡️",
+    description:"Gestione avanzata con geofencing e rilevamento finestre aperte.", consumo_w:2, standby_w:1, ore_uso_giorno:24, tradizionale_w:3 },
+  { id:"climate_prem", category:"Climatizzazione", brand:"Google Nest", name:"Nest Learning Thermostat", budget_level:"premium", price:249, scale_rule:"fixed_1", icon:"🌡️",
+    description:"Apprende le tue abitudini e si regola da solo.", consumo_w:3, standby_w:1.5, ore_uso_giorno:24, tradizionale_w:3 },
+  { id:"sec_eco", category:"Sicurezza", brand:"Xiaomi / Sonoff", name:"Sensore Porte/Finestre SNZB-04", budget_level:"economico", price:12, scale_rule:"1_per_30_mq", icon:"🔒",
+    description:"Sensore base Zigbee per automazioni semplici.", consumo_w:0, standby_w:0.05, ore_uso_giorno:24, tradizionale_w:0 },
+  { id:"sec_mid", category:"Sicurezza", brand:"Aqara", name:"Sensore P2 (Matter/Thread)", budget_level:"bilanciato", price:28, scale_rule:"1_per_30_mq", icon:"🔒",
+    description:"Altamente reattivo, compatibile con il nuovo standard Matter.", consumo_w:0, standby_w:0.05, ore_uso_giorno:24, tradizionale_w:0 },
+  { id:"sec_prem", category:"Sicurezza", brand:"Eve", name:"Eve Door & Window", budget_level:"premium", price:40, scale_rule:"1_per_30_mq", icon:"🔒",
+    description:"Privacy assoluta (no cloud), Apple HomeKit.", consumo_w:0, standby_w:0.03, ore_uso_giorno:24, tradizionale_w:0 },
+  { id:"clean_eco", category:"Pulizia", brand:"Xiaomi", name:"Robot Vacuum E10", budget_level:"economico", price:160, scale_rule:"fixed_1", icon:"🤖",
+    description:"Aspirazione base e lavaggio a trascinamento.", consumo_w:28, standby_w:3, ore_uso_giorno:1, tradizionale_w:1400 },
+  { id:"clean_mid", category:"Pulizia", brand:"Roborock", name:"Roborock Q8 Max", budget_level:"bilanciato", price:399, scale_rule:"fixed_1", icon:"🤖",
+    description:"Ottima navigazione LiDAR ed evitamento ostacoli.", consumo_w:33, standby_w:3, ore_uso_giorno:1, tradizionale_w:1400 },
+  { id:"clean_prem", category:"Pulizia", brand:"Dreame / Roborock", name:"Dreame X40 Ultra / S8 MaxV", budget_level:"premium", price:1299, scale_rule:"fixed_1", icon:"🤖",
+    description:"Stazione base autopulente, lavaggio moci ad acqua calda.", consumo_w:65, standby_w:5, ore_uso_giorno:1, tradizionale_w:1400 },
+  { id:"hub_eco", category:"Hub & Controllo", brand:"Amazon", name:"Echo Dot (5a gen)", budget_level:"economico", price:40, scale_rule:"1_per_50_mq", icon:"🏠",
+    description:"Controllo vocale base per dispositivi Wi-Fi.", consumo_w:1.7, standby_w:1.5, ore_uso_giorno:24, tradizionale_w:0 },
+  { id:"hub_mid", category:"Hub & Controllo", brand:"Google / Amazon", name:"Google Nest Hub / Echo Hub", budget_level:"bilanciato", price:99, scale_rule:"fixed_1", icon:"🏠",
+    description:"Pannello touch centrale per gestire visivamente la casa.", consumo_w:6, standby_w:2, ore_uso_giorno:24, tradizionale_w:0 },
+  { id:"hub_prem", category:"Hub & Controllo", brand:"Home Assistant / Apple", name:"HA Green + HomePod mini", budget_level:"premium", price:250, scale_rule:"fixed_1", icon:"🏠",
+    description:"Controllo totale locale, senza latenza, automazioni avanzate.", consumo_w:8, standby_w:6, ore_uso_giorno:24, tradizionale_w:0 },
+];
+
+const PREZZO_KWH = 0.25;
+const CATEGORIE_ORDER = ["Illuminazione","Climatizzazione","Sicurezza","Pulizia","Hub & Controllo"];
+
+const CAT = {
+  "Illuminazione":   { c1:"#f59e0b", c2:"#fde68a", icon:"💡" },
+  "Climatizzazione": { c1:"#38bdf8", c2:"#bae6fd", icon:"🌡️" },
+  "Sicurezza":       { c1:"#f43f5e", c2:"#fecdd3", icon:"🔒" },
+  "Pulizia":         { c1:"#22c55e", c2:"#bbf7d0", icon:"🤖" },
+  "Hub & Controllo": { c1:"#a78bfa", c2:"#ddd6fe", icon:"🏠" },
+};
+
+const BUDGET = {
+  economico:  { label:"Economico",  emoji:"🟢", desc:"Xiaomi · Tapo · Sonoff",    c:"#4ade80" },
+  bilanciato: { label:"Bilanciato", emoji:"🔵", desc:"Aqara · Tado · Roborock",   c:"#38bdf8" },
+  premium:    { label:"Premium",    emoji:"⭐", desc:"Hue · Nest · Eve · Dreame",  c:"#fbbf24" },
+};
+
+function calcolaQuantita(rule, mq) {
+  if (rule === "fixed_1") return 1;
+  if (rule === "1_per_15_mq") return Math.max(1, Math.ceil(mq / 15));
+  if (rule === "1_per_30_mq") return Math.max(1, Math.ceil(mq / 30));
+  if (rule === "1_per_50_mq") return Math.max(1, Math.ceil(mq / 50));
+  return 1;
+}
+
+function App() {
+  const [mq, setMq]         = useState(80);
+  const [budget, setBudget] = useState("bilanciato");
+  const [tab, setTab]       = useState("dispositivi");
+
+  const risultati = useMemo(() =>
+    DISPOSITIVI.filter(d => d.budget_level === budget).map(d => {
+      const qty  = calcolaQuantita(d.scale_rule, mq);
+      const kwhA = ((d.consumo_w * d.ore_uso_giorno + d.standby_w * (24 - d.ore_uso_giorno)) * 365 / 1000) * qty;
+      const kwhT = d.tradizionale_w > 0 ? (d.tradizionale_w * d.ore_uso_giorno * 365 / 1000) * qty : 0;
+      return { ...d, qty, totAcq: qty * d.price, kwhA, costoA: kwhA * PREZZO_KWH, kwhT, costoT: kwhT * PREZZO_KWH, rispA: Math.max(0, kwhT - kwhA) * PREZZO_KWH };
+    }),
+  [mq, budget]);
+
+  const totAcq    = useMemo(() => risultati.reduce((s,d) => s+d.totAcq,  0), [risultati]);
+  const totKwhA   = useMemo(() => risultati.reduce((s,d) => s+d.kwhA,   0), [risultati]);
+  const totCostoA = useMemo(() => risultati.reduce((s,d) => s+d.costoA, 0), [risultati]);
+  const totRisp   = useMemo(() => risultati.reduce((s,d) => s+d.rispA,  0), [risultati]);
+  const totKwhT   = useMemo(() => risultati.reduce((s,d) => s+d.kwhT,   0), [risultati]);
+  const payback   = totRisp > 0 ? (totAcq / totRisp).toFixed(1) : "—";
+
+  const perCat = useMemo(() => {
+    const m = {}; CATEGORIE_ORDER.forEach(c => m[c] = []);
+    risultati.forEach(d => { if (m[d.category]) m[d.category].push(d); });
+    return m;
+  }, [risultati]);
+
+  const bc = BUDGET[budget];
+
+  const card  = { background:"#1a1f2e", border:"1px solid #252d3d", borderRadius:16, padding:22 };
+  const label = { fontSize:11, fontWeight:700, letterSpacing:".1em", textTransform:"uppercase", marginBottom:12 };
+  const muted = { fontSize:12, color:"#64748b" };
+
+  return (
+    <div style={{ minHeight:"100vh", background:"#0d1117", color:"#e2e8f0", fontFamily:"'Segoe UI',system-ui,sans-serif", fontSize:14 }}>
+      <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:0,
+        background:`radial-gradient(ellipse 70% 40% at 15% 0%, ${bc.c}12 0%, transparent 65%), radial-gradient(ellipse 50% 35% at 85% 100%, #a78bfa12 0%, transparent 60%)` }} />
+
+      {/* HEADER */}
+      <header style={{ position:"sticky", top:0, zIndex:50, borderBottom:"1px solid #1e2535",
+        background:"rgba(13,17,23,.95)", backdropFilter:"blur(24px)" }}>
+        <div style={{ maxWidth:1300, margin:"0 auto", height:68, display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 28px", flexWrap:"wrap", gap:8 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+            <div style={{ fontSize:28 }}>🏠</div>
+            <div>
+              <div style={{ fontSize:16, fontWeight:800, color:"#f8fafc" }}>Smart Home Configurator</div>
+              <div style={{ fontSize:11, color:"#475569", letterSpacing:".1em", textTransform:"uppercase" }}>Preventivo Domotica</div>
+            </div>
+          </div>
+          <div style={{ display:"flex", gap:20, alignItems:"center", flexWrap:"wrap" }}>
+            <div style={{ textAlign:"right" }}>
+              <div style={{ ...muted, marginBottom:2 }}>Investimento</div>
+              <div style={{ fontSize:22, fontWeight:900, color:bc.c }}>€{totAcq.toLocaleString("it-IT",{minimumFractionDigits:0})}</div>
+            </div>
+            <div style={{ width:1, height:32, background:"#1e2535" }} />
+            <div style={{ textAlign:"right" }}>
+              <div style={{ ...muted, marginBottom:2 }}>Energia/anno</div>
+              <div style={{ fontSize:22, fontWeight:900, color:"#fb7185" }}>€{totCostoA.toFixed(0)}</div>
+            </div>
+            {totRisp > 0 && <>
+              <div style={{ width:1, height:32, background:"#1e2535" }} />
+              <div style={{ textAlign:"right" }}>
+                <div style={{ ...muted, marginBottom:2 }}>Risparmio/anno</div>
+                <div style={{ fontSize:22, fontWeight:900, color:"#4ade80" }}>+€{totRisp.toFixed(0)}</div>
+              </div>
+            </>}
+          </div>
+        </div>
+      </header>
+
+      <div style={{ maxWidth:1300, margin:"0 auto", padding:"28px", position:"relative", zIndex:1 }}>
+        <div style={{ display:"flex", gap:24, alignItems:"flex-start", flexWrap:"wrap" }}>
+
+          {/* SIDEBAR */}
+          <aside style={{ width:290, flexShrink:0, display:"flex", flexDirection:"column", gap:14 }}>
+
+            <div style={{ ...card }}>
+              <div style={{ ...label, color:"#38bdf8" }}>📐 Superficie</div>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom:6 }}>
+                <span style={{ color:"#94a3b8", fontSize:13 }}>Metri quadri</span>
+                <span style={{ fontSize:32, fontWeight:900, color:"#f8fafc" }}>{mq}<span style={{ fontSize:13, color:"#475569", fontWeight:400 }}> m²</span></span>
+              </div>
+              <input type="range" min={30} max={300} step={5} value={mq}
+                onChange={e => setMq(Number(e.target.value))}
+                style={{ width:"100%", cursor:"pointer", accentColor:"#38bdf8" }} />
+              <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:"#334155", marginTop:4 }}>
+                <span>30</span><span>300 m²</span>
+              </div>
+              <div style={{ marginTop:10, textAlign:"center", fontSize:12, padding:"5px 12px",
+                borderRadius:100, background:"#252d3d", color:"#94a3b8" }}>
+                {mq < 60 ? "🏢 Monolocale" : mq < 100 ? "🏠 Appartamento medio" : mq < 150 ? "🏡 Appartamento grande" : "🏰 Villa"}
+              </div>
+            </div>
+
+            <div style={{ ...card }}>
+              <div style={{ ...label, color:"#38bdf8" }}>💰 Budget</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                {Object.entries(BUDGET).map(([key, val]) => {
+                  const active = budget === key;
+                  return (
+                    <button key={key} onClick={() => setBudget(key)} style={{
+                      padding:"11px 14px", borderRadius:10, cursor:"pointer", textAlign:"left", transition:"all .2s",
+                      background: active ? `${val.c}18` : "#252d3d",
+                      border: active ? `1.5px solid ${val.c}` : "1.5px solid transparent",
+                      boxShadow: active ? `0 0 18px ${val.c}22` : "none",
+                    }}>
+                      <div style={{ display:"flex", justifyContent:"space-between" }}>
+                        <span style={{ fontWeight:700, fontSize:13, color: active ? val.c : "#94a3b8" }}>{val.emoji} {val.label}</span>
+                        {active && <span style={{ fontSize:12, color:val.c }}>✓</span>}
+                      </div>
+                      <div style={{ fontSize:11, color:"#475569", marginTop:2 }}>{val.desc}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={{ ...card }}>
+              <div style={{ ...label, color:"#38bdf8" }}>📊 Per categoria</div>
+              {CATEGORIE_ORDER.map(cat => {
+                const items = perCat[cat]; if (!items?.length) return null;
+                const tot = items.reduce((s,d) => s+d.totAcq, 0);
+                const c = CAT[cat];
+                return (
+                  <div key={cat} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"7px 0", borderBottom:"1px solid #1e2535" }}>
+                    <span style={{ fontSize:12, color:"#94a3b8", display:"flex", alignItems:"center", gap:6 }}>
+                      <span>{c.icon}</span>{cat}
+                    </span>
+                    <span style={{ fontWeight:700, fontSize:12, color:c.c1 }}>€{tot.toLocaleString("it-IT",{minimumFractionDigits:0})}</span>
+                  </div>
+                );
+              })}
+              <div style={{ display:"flex", justifyContent:"space-between", paddingTop:10, marginTop:2 }}>
+                <span style={{ fontWeight:800, fontSize:13, color:"#f1f5f9" }}>Totale</span>
+                <span style={{ fontWeight:900, fontSize:14, color:bc.c }}>€{totAcq.toLocaleString("it-IT",{minimumFractionDigits:0})}</span>
+              </div>
+            </div>
+
+            <div style={{ background:"linear-gradient(135deg,#1a1f2e,#161b27)", border:"1px solid #252d3d", borderRadius:16, padding:20 }}>
+              <div style={{ ...label, color:"#fbbf24" }}>⚡ Energia/anno</div>
+              {[
+                ["Smart", `${totKwhA.toFixed(0)} kWh`, `€${totCostoA.toFixed(0)}`, "#fb7185"],
+                ["Tradizionale", `${totKwhT.toFixed(0)} kWh`, `€${(totKwhT*PREZZO_KWH).toFixed(0)}`, "#64748b"],
+                ...(totRisp > 0 ? [["Risparmio","",`+€${totRisp.toFixed(0)}`,"#4ade80"],["Payback","",`${payback} anni`,"#fbbf24"]] : []),
+              ].map(([lbl,kwh,euro,col], i) => (
+                <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"6px 0", borderTop: i>0?"1px solid #1e2535":"none" }}>
+                  <span style={{ fontSize:12, color:"#64748b" }}>{lbl}</span>
+                  <div style={{ textAlign:"right" }}>
+                    {kwh && <div style={{ fontSize:11, color:"#475569" }}>{kwh}</div>}
+                    <div style={{ fontWeight:700, fontSize:12, color:col }}>{euro}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </aside>
+
+          {/* MAIN */}
+          <main style={{ flex:1, minWidth:280 }}>
+            <div style={{ display:"flex", gap:4, marginBottom:24, background:"#1a1f2e", borderRadius:12, padding:4, width:"fit-content", border:"1px solid #252d3d" }}>
+              {[["dispositivi","🛒 Dispositivi"],["consumi","⚡ Consumi & Bolletta"]].map(([key,lbl]) => (
+                <button key={key} onClick={() => setTab(key)} style={{
+                  padding:"8px 20px", borderRadius:9, border:"none", cursor:"pointer", fontSize:13, fontWeight:600, transition:"all .2s",
+                  background: tab===key ? bc.c : "transparent", color: tab===key ? "#0d1117" : "#64748b" }}>
+                  {lbl}
+                </button>
+              ))}
+            </div>
+
+            {/* TAB DISPOSITIVI */}
+            {tab === "dispositivi" && (
+              <div style={{ display:"flex", flexDirection:"column", gap:28 }}>
+                {CATEGORIE_ORDER.map(cat => {
+                  const items = perCat[cat]; if (!items?.length) return null;
+                  const c = CAT[cat];
+                  const totCat = items.reduce((s,d) => s+d.totAcq, 0);
+                  return (
+                    <section key={cat}>
+                      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14, paddingBottom:12, borderBottom:`2px solid ${c.c1}40` }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                          <div style={{ width:4, height:28, borderRadius:2, background:`linear-gradient(180deg,${c.c1},${c.c2}60)` }} />
+                          <span style={{ fontSize:18, fontWeight:800, color:c.c1 }}>{cat}</span>
+                          <span style={{ fontSize:11, color:"#475569", padding:"2px 8px", background:"#1e2535", borderRadius:6 }}>
+                            {items.length} prodotto{items.length>1?"i":""}
+                          </span>
+                        </div>
+                        <span style={{ fontSize:16, fontWeight:800, color:c.c1 }}>€{totCat.toLocaleString("it-IT",{minimumFractionDigits:0})}</span>
+                      </div>
+                      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))", gap:14 }}>
+                        {items.map(d => (
+                          <div key={d.id} style={{ background:"#1a1f2e", border:`1px solid ${c.c1}30`, borderRadius:14, padding:20, transition:"all .25s", position:"relative", overflow:"hidden", cursor:"default" }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor=c.c1+"80"; e.currentTarget.style.transform="translateY(-3px)"; e.currentTarget.style.boxShadow=`0 10px 32px ${c.c1}20`; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor=c.c1+"30"; e.currentTarget.style.transform="none"; e.currentTarget.style.boxShadow="none"; }}>
+                            <div style={{ position:"absolute", top:0, left:0, right:0, height:3, background:`linear-gradient(90deg,${c.c1},${c.c2})`, borderRadius:"14px 14px 0 0" }} />
+                            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8 }}>
+                              <div>
+                                <div style={{ fontSize:11, fontWeight:700, color:c.c1, letterSpacing:".06em", textTransform:"uppercase", marginBottom:3 }}>{d.brand}</div>
+                                <div style={{ fontSize:14, fontWeight:700, color:"#f8fafc", lineHeight:1.3 }}>{d.name}</div>
+                              </div>
+                              {d.qty > 1 && (
+                                <span style={{ fontSize:13, fontWeight:800, padding:"3px 10px", borderRadius:8, background:c.c1+"22", color:c.c1, flexShrink:0, marginLeft:8 }}>×{d.qty}</span>
+                              )}
+                            </div>
+                            <p style={{ fontSize:12, color:"#94a3b8", lineHeight:1.65, marginBottom:12 }}>{d.description}</p>
+                            {(d.consumo_w > 0 || d.standby_w > 0.1) && (
+                              <div style={{ display:"flex", gap:8, marginBottom:12, flexWrap:"wrap" }}>
+                                {d.consumo_w > 0 && (
+                                  <span style={{ fontSize:11, padding:"3px 9px", borderRadius:6, background:"#fbbf2418", color:"#fbbf24", border:"1px solid #fbbf2430", fontWeight:600 }}>⚡ {d.consumo_w}W attivo</span>
+                                )}
+                                <span style={{ fontSize:11, padding:"3px 9px", borderRadius:6, background:"#1e2535", color:"#64748b", border:"1px solid #252d3d" }}>💤 {d.standby_w}W standby</span>
+                              </div>
+                            )}
+                            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", paddingTop:12, borderTop:"1px solid #252d3d" }}>
+                              <div>
+                                <div style={{ fontSize:11, color:"#475569" }}>unitario</div>
+                                <div style={{ fontSize:14, fontWeight:600, color:"#cbd5e1" }}>€{d.price.toFixed(2)}</div>
+                              </div>
+                              <div style={{ textAlign:"right" }}>
+                                {d.qty > 1 && <div style={{ fontSize:11, color:"#475569" }}>{d.qty} pezzi</div>}
+                                <div style={{ fontSize:20, fontWeight:900, color:c.c1 }}>€{d.totAcq.toFixed(0)}</div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* TAB CONSUMI */}
+            {tab === "consumi" && (
+              <div style={{ display:"flex", flexDirection:"column", gap:18 }}>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:14 }}>
+                  {[
+                    { icon:"🔌", lbl:"Senza domotica",  sub:"Dispositivi tradizionali", kwh:totKwhT, euro:(totKwhT*PREZZO_KWH).toFixed(0), c:"#fb7185" },
+                    { icon:"✅", lbl:"Con smart home",   sub:`Budget ${bc.label}`, kwh:totKwhA, euro:totCostoA.toFixed(0), c:bc.c },
+                    { icon:"💰", lbl:"Risparmio annuo",  sub:totRisp>0?`Payback ${payback} anni`:"Solo energia smart", kwh:Math.max(0,totKwhT-totKwhA), euro:totRisp.toFixed(0), c:"#4ade80" },
+                  ].map((x,i) => (
+                    <div key={i} style={{ background:"#1a1f2e", border:`1px solid ${x.c}30`, borderRadius:14, padding:"20px 22px" }}>
+                      <div style={{ fontSize:24, marginBottom:8 }}>{x.icon}</div>
+                      <div style={{ fontSize:14, fontWeight:700, color:"#f1f5f9", marginBottom:2 }}>{x.lbl}</div>
+                      <div style={{ fontSize:11, color:"#64748b", marginBottom:14 }}>{x.sub}</div>
+                      <div style={{ fontSize:28, fontWeight:900, color:x.c }}>€{x.euro}</div>
+                      <div style={{ fontSize:11, color:"#475569", marginTop:3 }}>{x.kwh.toFixed(0)} kWh/anno</div>
+                    </div>
+                  ))}
+                </div>
+
+                {totKwhT > 0 && (
+                  <div style={{ ...card }}>
+                    <div style={{ fontSize:14, fontWeight:700, color:"#f1f5f9", marginBottom:16 }}>Confronto visivo consumo annuo</div>
+                    {[
+                      { lbl:"Tradizionale", kwh:totKwhT, c:"#fb7185" },
+                      { lbl:"Smart", kwh:totKwhA, c:bc.c },
+                    ].map(r => (
+                      <div key={r.lbl} style={{ marginBottom:14 }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:6 }}>
+                          <span style={{ color:"#94a3b8", fontWeight:600 }}>{r.lbl}</span>
+                          <span style={{ color:r.c, fontWeight:700 }}>{r.kwh.toFixed(0)} kWh — €{(r.kwh*PREZZO_KWH).toFixed(0)}</span>
+                        </div>
+                        <div style={{ height:12, background:"#252d3d", borderRadius:6, overflow:"hidden" }}>
+                          <div style={{ height:"100%", borderRadius:6, background:r.c, width:`${Math.min(100,(r.kwh/Math.max(totKwhT,totKwhA)*100)).toFixed(0)}%`, transition:"width .8s ease" }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div style={{ ...card, padding:0, overflow:"hidden" }}>
+                  <div style={{ padding:"16px 22px", borderBottom:"1px solid #252d3d", fontSize:14, fontWeight:700, color:"#f1f5f9" }}>Dettaglio consumi per dispositivo</div>
+                  <div style={{ overflowX:"auto" }}>
+                    <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
+                      <thead>
+                        <tr style={{ background:"#161b27" }}>
+                          {["Dispositivo","Qtà","W attivo","W standby","kWh/anno","€/anno","Tradiz.","Risparmio"].map(h => (
+                            <th key={h} style={{ padding:"10px 16px", textAlign:"left", color:"#475569", fontWeight:700, fontSize:11, letterSpacing:".06em", textTransform:"uppercase", whiteSpace:"nowrap" }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {risultati.map((d,i) => {
+                          const c = CAT[d.category];
+                          return (
+                            <tr key={d.id} style={{ borderTop:"1px solid #1e2535", background: i%2===0?"transparent":"#ffffff05" }}>
+                              <td style={{ padding:"10px 16px" }}>
+                                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                                  <span style={{ fontSize:16 }}>{d.icon}</span>
+                                  <div>
+                                    <div style={{ color:"#e2e8f0", fontWeight:600 }}>{d.name}</div>
+                                    <div style={{ color:c.c1, fontSize:10, marginTop:1 }}>{d.category}</div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td style={{ padding:"10px 16px", color:"#94a3b8", textAlign:"center", fontWeight:700 }}>{d.qty}</td>
+                              <td style={{ padding:"10px 16px", color:"#fbbf24", fontWeight:700 }}>{d.consumo_w}W</td>
+                              <td style={{ padding:"10px 16px", color:"#475569" }}>{d.standby_w}W</td>
+                              <td style={{ padding:"10px 16px", color:"#e2e8f0", fontWeight:700 }}>{d.kwhA.toFixed(1)}</td>
+                              <td style={{ padding:"10px 16px", color:"#fb7185", fontWeight:800 }}>€{d.costoA.toFixed(1)}</td>
+                              <td style={{ padding:"10px 16px", color:"#64748b" }}>{d.kwhT > 0 ? d.kwhT.toFixed(0)+" kWh" : "—"}</td>
+                              <td style={{ padding:"10px 16px", color: d.rispA>0?"#4ade80":"#475569", fontWeight:800 }}>
+                                {d.rispA > 0 ? `+€${d.rispA.toFixed(0)}` : "—"}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr style={{ borderTop:"2px solid #252d3d", background:"#161b27" }}>
+                          <td style={{ padding:"12px 16px", fontWeight:800, color:"#f1f5f9" }} colSpan={4}>Totale</td>
+                          <td style={{ padding:"12px 16px", fontWeight:800, color:"#e2e8f0" }}>{totKwhA.toFixed(0)}</td>
+                          <td style={{ padding:"12px 16px", fontWeight:900, color:"#fb7185" }}>€{totCostoA.toFixed(0)}</td>
+                          <td style={{ padding:"12px 16px", color:"#64748b" }}>{totKwhT.toFixed(0)} kWh</td>
+                          <td style={{ padding:"12px 16px", fontWeight:900, color:"#4ade80" }}>+€{totRisp.toFixed(0)}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+
+                <div style={{ background:"#1a1f2e", border:"1px solid #252d3d", borderRadius:12, padding:"14px 18px", fontSize:11, color:"#475569", lineHeight:1.8 }}>
+                  <strong style={{ color:"#64748b" }}>📌 Metodologia:</strong> Prezzo energia €{PREZZO_KWH}/kWh (media Italia 2025, oneri di sistema inclusi).
+                  Consumi in condizioni tipiche. Risparmio climatizzazione su base annua. Sensori a batteria non inclusi (trascurabili).
+                  Payback calcolato solo su risparmio energetico diretto.
+                </div>
+              </div>
+            )}
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
